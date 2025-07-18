@@ -1,0 +1,60 @@
+import Message from "../models/message.js";
+import User from "../models/user.js";
+
+export const getUserForSidebar = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const filteredUsers = await User.find({ _id: { $ne: userId } }).select(
+      "-password"
+    );
+
+    const unseenMessage = {};
+    const promises = filteredUsers.map(async (user) => {
+      const message = await Message.find({
+        senderId: user._id,
+        receiverId: userId,
+        seen: false,
+      });
+      if (message.length > 0) {
+        unseenMessage[user._id] = message.length;
+      }
+    });
+    await Promise.all(promises);
+    res
+      .status(500)
+      .json({ success: true, users: filteredUsers, unseenMessage });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+export const getMessage = async (req, res) => {
+  try {
+    const { Id: selectedUserId } = req.params;
+    const myId = req.user._id;
+
+    const message = await Message.find({
+      $or: [
+        { senderId: myId, receiverId: selectedUserId },
+        { senderId: selectedUserId, receiverId: myId },
+      ],
+    });
+    await Message.updateMany(
+      { senderId: selectedUserId, receiverId: myId },
+      { seen: true }
+    );
+
+    res.json({ success: true, message });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+export const markMessageAsSeen = async (req, res) => {
+  try {
+    
+
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
