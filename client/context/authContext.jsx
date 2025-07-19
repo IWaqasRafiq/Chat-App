@@ -4,12 +4,14 @@ import toast from "react-hot-toast";
 import {io} from "socket.io-client";
 
 
-const backendUrl = import.meta.env.BACKEND_URL;
+const backendUrl = import.meta.env.VITE_BACKEND_URL;
 axios.defaults.baseURL = backendUrl;
+console.log("Axios Base URL:", backendUrl);
+
 
 export const AuthContext = createContext();
 
-export const AuthProvider = ({ Children }) => {
+export const AuthProvider = ({ children }) => {
 
     const [token, setToken] = useState(localStorage.getItem("token"));
     const [authUser, setAUthUser] = useState(null);
@@ -31,9 +33,50 @@ export const AuthProvider = ({ Children }) => {
 
     }
 
-    
+    const login = async (state, credentials) => {
+        try {
+            const { data } = await axios.post(`/api/auth/${state}`, credentials);
+            console.log("Sending credentials:", credentials);
+
+            if (data.success) {
+                setAUthUser(data.userData);
+                connectSOcket(data.userData);
+                axios.defaults.headers.common["token"] = data.token;
+                setToken(data.token);
+                localStorage.setItem("token", data.token);
+                toast.success(data.message);
+            } else {
+                toast.error(data.response.data.message);
+            }
+        } catch (error) {
+            toast.error(error.response.data.message);
+            console.log(error);
+        }
+    }    
+
+    const logout = () => {
+        setAUthUser(null);
+        setToken(null);
+        setOnlineUsers([]);
+        localStorage.removeItem("token");
+        axios.defaults.headers.common["token"] = null;
+        socket?.disconnect();
+        toast.success("Logged out successfully");
+    }
 
 
+    const updateProfile = async (body) => {
+        try {
+            const { data } = await axios.put("/api/auth/update-profile", body);
+            if (data.success) {
+                setAUthUser(data.user);
+                toast.success("Profile udated successfully");
+            } 
+        } catch (error) {
+            toast.error(error.message);
+            console.log(error);
+        }
+    }
 
 
 
@@ -63,12 +106,15 @@ export const AuthProvider = ({ Children }) => {
         axios,
         authUser,
         onlineUsers,
-        socket
+        socket,
+        login,
+        logout,
+        updateProfile
     }
 
     return (
         <AuthContext.Provider value={value}>
-            {Children}
+            {children}
         </AuthContext.Provider>
     )
 }
