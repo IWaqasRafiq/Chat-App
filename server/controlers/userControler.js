@@ -6,7 +6,7 @@ import cloudinary from "../lib/cloudinary.js";
 
 // Signup new User
 export const signup = async (req, res) => {
-    const { name, email, password, bio } = req.body;
+    const { fullName, email, password, bio } = req.body;
     try {
         if (!fullName || !email || !password || !bio) {
             return res.status(400).json({ error: "All fields are required" });
@@ -20,8 +20,8 @@ export const signup = async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        const newUser = new User.create({
-            name,
+        const newUser = await User.create({
+            fullName,
             email,
             password: hashedPassword,
             bio,
@@ -47,7 +47,7 @@ export const login = async (req, res) => {
         const { email, password } = req.body;
         const user = await User.findOne({ email });
 
-        const isPasswordCorrect = await bcrypt.compare(password, userData.password);
+        const isPasswordCorrect = await bcrypt.compare(password, user.password);
 
         if (!isPasswordCorrect) {
             return res.status(400).json({ error: "Invalid credentials" });
