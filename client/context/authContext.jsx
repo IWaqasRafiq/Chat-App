@@ -36,7 +36,6 @@ export const AuthProvider = ({ children }) => {
     const login = async (state, credentials) => {
         try {
             const { data } = await axios.post(`/api/auth/${state}`, credentials);
-            console.log("Sending credentials:", credentials);
 
             if (data.success) {
                 setAUthUser(data.userData);

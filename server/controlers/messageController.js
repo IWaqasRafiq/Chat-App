@@ -1,6 +1,6 @@
 import Message from "../models/message.js";
 import User from "../models/user.js";
-import cloudinary from "../lib/cloudinary.js"; 
+import cloudinary from "../lib/cloudinary.js";
 import { io, userSocketMap } from "../server.js";
 
 export const getUserForSidebar = async (req, res) => {
@@ -23,8 +23,12 @@ export const getUserForSidebar = async (req, res) => {
     });
     await Promise.all(promises);
     res
-      .status(500)
-      .json({ success: true, users: filteredUsers, unseenMessage });
+      .status(200)
+      .json({
+        success: true,
+        users: filteredUsers,
+        unseenMessages: unseenMessage,
+      });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
   }
@@ -32,8 +36,9 @@ export const getUserForSidebar = async (req, res) => {
 
 export const getMessage = async (req, res) => {
   try {
-    const { Id: selectedUserId } = req.params;
+    const { id: selectedUserId } = req.params;
     const myId = req.user._id;
+    console.log("✅ getMessage called with:", req.params.id);
 
     const message = await Message.find({
       $or: [
@@ -46,6 +51,7 @@ export const getMessage = async (req, res) => {
       { seen: true }
     );
 
+    // res.json({ success: true, messages: message });
     res.json({ success: true, message });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
@@ -55,7 +61,7 @@ export const getMessage = async (req, res) => {
 export const markMessageAsSeen = async (req, res) => {
   try {
     const { id } = req.params;
-    await Message.findByIdAndDelete(id, { seen: true });
+    await Message.findByIdAndUpdate(id, { seen: true });
     res.json({ success: true });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
@@ -68,8 +74,8 @@ export const sendMessage = async (req, res) => {
     const receiverId = req.params.id;
     const senderId = req.user._id;
 
-    let imageUrl ;
-    if(image){
+    let imageUrl;
+    if (image) {
       const response = await cloudinary.uploader.upload(image);
       imageUrl = response.secure_url;
     }
@@ -77,7 +83,7 @@ export const sendMessage = async (req, res) => {
       senderId,
       receiverId,
       text,
-      image: imageUrl
+      image: imageUrl,
     });
 
     const receiverSocketId = userSocketMap[receiverId];
