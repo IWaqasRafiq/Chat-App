@@ -22,13 +22,11 @@ export const getUserForSidebar = async (req, res) => {
       }
     });
     await Promise.all(promises);
-    res
-      .status(200)
-      .json({
-        success: true,
-        users: filteredUsers,
-        unseenMessages: unseenMessage,
-      });
+    res.status(200).json({
+      success: true,
+      users: filteredUsers,
+      unseenMessages: unseenMessage,
+    });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
   }
@@ -38,21 +36,21 @@ export const getMessage = async (req, res) => {
   try {
     const { id: selectedUserId } = req.params;
     const myId = req.user._id;
-    console.log("✅ getMessage called with:", req.params.id);
+    console.log("getMessage called with:", req.params.id);
+    console.log("Fetching messages between", myId, "and", selectedUserId);
 
     const message = await Message.find({
       $or: [
         { senderId: myId, receiverId: selectedUserId },
         { senderId: selectedUserId, receiverId: myId },
       ],
-    });
+    }).sort({ createdAt: 1 });
     await Message.updateMany(
       { senderId: selectedUserId, receiverId: myId },
       { seen: true }
     );
 
-    // res.json({ success: true, messages: message });
-    res.json({ success: true, message });
+    res.json({ success: true, messages: message });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
   }
@@ -74,6 +72,22 @@ export const sendMessage = async (req, res) => {
     const receiverId = req.params.id;
     const senderId = req.user._id;
 
+    // 🛡️ Prevent sending empty messages
+    if (!text && !image) {
+      return res.status(400).json({
+        success: false,
+        message: "Message cannot be empty.",
+      });
+    }
+
+    // 🛡️ Optional: prevent sending messages to self
+    if (receiverId === senderId.toString()) {
+      return res.status(400).json({
+        success: false,
+        message: "You can't send a message to yourself.",
+      });
+    }
+
     let imageUrl;
     if (image) {
       const response = await cloudinary.uploader.upload(image);
@@ -88,7 +102,7 @@ export const sendMessage = async (req, res) => {
 
     const receiverSocketId = userSocketMap[receiverId];
     if (receiverSocketId) {
-      io.to(receiverSocketId).emit("newMessage", newMessage);
+      io.to(receiverSocketId).emit("message", newMessage);
     }
 
     res.json({ success: true, newMessage });

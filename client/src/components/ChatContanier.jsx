@@ -17,13 +17,13 @@ const ChatContanier = () => {
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (input.trim() === "") return null;
-    await sendMessage({text: input.trim()});    
+    await sendMessage({ text: input.trim() });
     setInput("");
   };
 
   const handleSendImage = async (e) => {
     const file = e.target.files[0];
-    if (!file || !file.type.startsWith("image/")){
+    if (!file || !file.type.startsWith("image/")) {
       toast.error("Please select an Image.");
       return;
     }
@@ -45,17 +45,20 @@ const ChatContanier = () => {
 
   useEffect(() => {
     if (scrollEnd.current && messages) {
-      scrollEnd.current.scrollIntoView({ behavior: "smooth" });
+      scrollEnd.current?.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages]);
 
   return selectedUser ? (
     <div className="h-full overflow-scroll relative backdrop-blur-lg">
       <div className="flex items-center gap-3 py-3 mx-4 border-b border-stone-500">
-        <img src={selectedUser.profilePic || assets.avatar_icon} alt="" className="w-8 rounded-full" />
+        <img src={selectedUser.profilePic || assets.avatar_icon} alt="" className="w-[40px] aspect-[1/1] rounded-full" />
         <p className="flex-1 text-lg text-white flex items-center gap-2">
-          {selectedUser.fullName}
-          {onlineUsers.includes(selectedUser.id)}<span className="w-2 h-2 rounded-full bg-green-500"></span> : <span className="w-2 h-2 rounded-full bg-red-500"></span>
+          {selectedUser.fullName?.split(' ')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+            .join(' ')}
+          {onlineUsers.includes(selectedUser._id) &&
+            <span className="w-2 h-2 rounded-full bg-green-500" title="Online"></span>}
         </p>
         <img
           onClick={() => setSelectedUser(null)}
@@ -70,9 +73,7 @@ const ChatContanier = () => {
         {messages.map((message, index) => (
           <div
             key={index}
-            className={`flex ite gap-2 justify-end items-end ${message.senderId !== authUser._id &&
-              "flex-row-reverse"
-              }`}
+            className={`flex gap-2 justify-end ${message.senderId !== authUser._id ? "flex-row-reverse" : ""}`}
           >
             {message.image ? (
               <img
@@ -83,22 +84,22 @@ const ChatContanier = () => {
             ) : (
               <p
                 className={`p-2 max-w-[200px] md:text-sm font-light rounded-lg mb-8 break-all bg-violet-500/30   text-white ${message.senderId === authUser._id
-                    ? "rounded-br-none"
-                    : "rounded-bl-none"
+                  ? "rounded-br-none"
+                  : "rounded-bl-none"
                   }`}
               >
                 {message.text}
               </p>
             )}
-            <div className="text-center text-xs">
+            <div className="text-center justify-items-center text-xs content-end">
               <img
                 src={
                   message.senderId === authUser._id
                     ? authUser?.profilePic || assets.avatar_icon
                     : selectedUser?.profilePic || assets.avatar_icon
                 }
-                alt=""
-                className="w-7 rounded-full"
+                alt={`${selectedUser?.fullName}'s avatar`}
+                className="w-[30px] aspect-[1/1] rounded-full"
               />
               <p className="text-gray-500">
                 {formatMessageTime(message.createdAt)}

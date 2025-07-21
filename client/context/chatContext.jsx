@@ -30,7 +30,7 @@ export const ChatProvider = ({ children }) => {
 
     const getMessages = async (userId) => {
         try {
-            const { data } = await axios.get(`/api/messages/${userId}`);
+            const { data } = await axios.get(`/api/message/${userId}`);
             if (data.success) {
                 setMessages(data.messages);
             }
@@ -42,7 +42,7 @@ export const ChatProvider = ({ children }) => {
 
     const sendMessage = async (messageData) => {
         try {
-            const { data } = await axios.post(`/api/messages/send/${selectedUser._id}`, messageData);
+            const { data } = await axios.post(`/api/message/send/${selectedUser._id}`, messageData);
             if (data.success) {
                 setMessages((prevMessage) => [...prevMessage, data.newMessage]);
             }
@@ -52,28 +52,30 @@ export const ChatProvider = ({ children }) => {
         }
     }
 
-    const subscribeToMessages = async () => {
+    const subscribeToMessages = () => {
         if (!socket) return;
 
         socket.on("message", (newMessage) => {
+            if (messages.some(msg => msg._id === newMessage._id)) return;
+
             if (selectedUser && newMessage.senderId === selectedUser._id) {
                 newMessage.seen = true;
-                setMessages((prevMessages) => [...prevMessages, newMessage]);
+                setMessages((prev) => [...prev, newMessage]);
                 axios.put(`/api/messages/mark/${newMessage._id}`);
             } else {
-                setUnseenMessages((prevUnseenMessages) => ({
-                    ...prevUnseenMessages,
-                    [newMessage.senderId]: prevUnseenMessages[newMessage.senderId]
-                        ? prevUnseenMessages[newMessage.senderId] + 1 : 1
+                setUnseenMessages((prev) => ({
+                    ...prev,
+                    [newMessage.senderId]: prev[newMessage.senderId]
+                        ? prev[newMessage.senderId] + 1
+                        : 1
                 }));
             }
         });
+    };
 
-    }
 
     const unsubscribeFromMessages = () => {
-        if (socket)
-            socket.off("newMessage");
+        if (socket) socket.off("message");
     }
 
     useEffect(() => {
