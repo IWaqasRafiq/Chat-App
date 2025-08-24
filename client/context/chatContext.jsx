@@ -2,9 +2,21 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { AuthContext } from "./authContext";
 import toast from "react-hot-toast";
 
-
-
 export const ChatContext = createContext();
+
+// --- Toast Manager ---
+let activeToasts = [];
+
+const limitedToast = (message, type = "success") => {
+    // If more than 2 already showing, remove the oldest
+    if (activeToasts.length >= 2) {
+        const oldest = activeToasts.shift();
+        toast.dismiss(oldest);
+    }
+
+    const id = toast[type](message, { duration: 3000 });
+    activeToasts.push(id);
+};
 
 export const ChatProvider = ({ children }) => {
 
@@ -23,7 +35,7 @@ export const ChatProvider = ({ children }) => {
                 setUnseenMessages(data.unseenMessages);
             }
         } catch (error) {
-            toast.error(error.message);
+            limitedToast(error.message, "error");
             console.log(error);
         }
     }
@@ -35,7 +47,7 @@ export const ChatProvider = ({ children }) => {
                 setMessages(data.messages);
             }
         } catch (error) {
-            toast.error(error.message);
+            limitedToast(error.message, "error");
             console.log(error);
         }
     }
@@ -47,7 +59,7 @@ export const ChatProvider = ({ children }) => {
                 setMessages((prevMessage) => [...prevMessage, data.newMessage]);
             }
         } catch (error) {
-            toast.error(error.message);
+            limitedToast(error.message, "error");
             console.log(error);
         }
     }

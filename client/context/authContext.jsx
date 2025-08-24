@@ -11,6 +11,20 @@ console.log("Axios Base URL:", backendUrl);
 
 export const AuthContext = createContext();
 
+// --- Toast Manager ---
+let activeToasts = [];
+
+const limitedToast = (message, type = "success") => {
+    // If more than 2 already showing, remove the oldest
+    if (activeToasts.length >= 2) {
+        const oldest = activeToasts.shift();
+        toast.dismiss(oldest);
+    }
+
+    const id = toast[type](message, { duration: 3000 });
+    activeToasts.push(id);
+};
+
 export const AuthProvider = ({ children }) => {
 
     const [token, setToken] = useState(localStorage.getItem("token"));
@@ -27,7 +41,7 @@ export const AuthProvider = ({ children }) => {
 
             }
         } catch (error) {
-            toast.error(error.message);
+            limitedToast(error.message, "error");
             console.log(error);
         }
 
@@ -43,12 +57,12 @@ export const AuthProvider = ({ children }) => {
                 axios.defaults.headers.common["token"] = data.token;
                 setToken(data.token);
                 localStorage.setItem("token", data.token);
-                toast.success(data.message);
+                limitedToast(data.message, "success");
             } else {
-                toast.error(data.response.data.message);
+                limitedToast("user not found", "error");
             }
         } catch (error) {
-            toast.error(error.response.data.message);
+            limitedToast("user not found", "error");
             console.log(error);
         }
     }    
@@ -60,7 +74,7 @@ export const AuthProvider = ({ children }) => {
         localStorage.removeItem("token");
         axios.defaults.headers.common["token"] = null;
         socket?.disconnect();
-        toast.success("Logged out successfully");
+        limitedToast("Logged out successfully", "success");
     }
 
 
@@ -69,10 +83,10 @@ export const AuthProvider = ({ children }) => {
             const { data } = await axios.put("/api/auth/update-profile", body);
             if (data.success) {
                 setAUthUser(data.user);
-                toast.success("Profile udated successfully");
-            } 
+                limitedToast("Profile updated successfully");
+            }
         } catch (error) {
-            toast.error(error.message);
+            limitedToast(error.message, "error");
             console.log(error);
         }
     }
