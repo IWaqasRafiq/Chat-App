@@ -11,6 +11,7 @@ const SideBar = () => {
 
   const { logout, onlineUsers } = useContext(AuthContext);
   const [input, setInput] = useState(false);
+  const [open, setOpen] = useState(false);
 
   const navigate = useNavigate();
 
@@ -33,8 +34,9 @@ const SideBar = () => {
               src={assets.menu_icon}
               alt="Menu"
               className="max-h-5 cursor-pointer"
+              onClick={() => setOpen(!open)}
             />
-            <div className="absolute top-full right-0 z-20 w-32 p-5 rounded-md bg-[#282142] border border-gray-600 text-gray-100 hidden group-hover:block ">
+            <div className={`absolute top-full right-0 z-20 w-32 p-5 rounded-md bg-[#282142] border border-gray-600 text-gray-100 ${open ? "block" : "hidden"}`}>
               <p
                 onClick={() => navigate("/profile")}
                 className="cursor-pointer text-sm"
